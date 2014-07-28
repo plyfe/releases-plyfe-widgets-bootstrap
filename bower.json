@@ -1,0 +1,21 @@
+{
+  "name": "plyfe-widgets-bootstrap",
+  "version": "0.3.3",
+  "authors": [
+    "Séamus O'Connor <seamus.oconnor@pneumaticweb.com>"
+  ],
+  "description": "Bootstrap loader for Plyfe platform widgets",
+  "main": "dist/plyfe-widgets-bootstrap.js",
+  "keywords": [
+    "plyfe"
+  ],
+  "license": "MIT",
+  "homepage": "plyfe.com",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "tests"
+  ]
+}
