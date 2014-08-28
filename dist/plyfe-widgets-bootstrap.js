@@ -7,12 +7,15 @@
  * Available via the MIT license.
  * http://github.com/plyfe/plyfe-widgets-bootstrap/LICENSE
  *
- * Date: 2014-07-28
+ * Date: 2014-08-28
  */
 (function(root, factory) {
     if (typeof define === "function" && define.amd) {
         define([], factory);
     } else {
+        if (root.Plyfe) {
+            return;
+        }
         root.Plyfe = {
             amd: false
         };
