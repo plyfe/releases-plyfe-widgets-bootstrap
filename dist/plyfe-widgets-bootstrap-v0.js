@@ -1,5 +1,5 @@
 /*!
- * Plyfe Widgets Library v0.3.3
+ * Plyfe Widgets Library v0.3.8
  * http://plyfe.com/
  *
  * Copyright 2014, Plyfe Inc.
@@ -7,7 +7,7 @@
  * Available via the MIT license.
  * http://github.com/plyfe/plyfe-widgets-bootstrap/LICENSE
  *
- * Date: 2014-08-28
+ * Date: 2014-09-18
  */
 (function(root, factory) {
     if (typeof define === "function" && define.amd) {
@@ -487,6 +487,7 @@
     define("settings", [ "require" ], function(require) {
         return {
             scheme: "https",
+            env: "production",
             domain: "plyfe.me",
             port: 443,
             authToken: null,
@@ -771,12 +772,37 @@
             postMessage: pm
         };
     });
-    define("main", [ "require", "utils", "settings", "widget", "auth", "switchboard" ], function(require) {
+    define("env", [ "require" ], function(require) {
+        return {
+            production: {
+                domain: "plyfe.me",
+                port: 443
+            },
+            staging: {
+                domain: "staging.plyfe.me",
+                port: 443
+            },
+            demo: {
+                domain: "demo.plyfe.me",
+                port: 443
+            },
+            test: {
+                domain: "test.plyfe.me",
+                port: 443
+            },
+            dev: {
+                domain: "development.plyfe.me",
+                port: 3001
+            }
+        };
+    });
+    define("main", [ "require", "utils", "settings", "widget", "auth", "switchboard", "env" ], function(require) {
         var utils = require("utils");
         var settings = require("settings");
         var widget = require("widget");
         var auth = require("auth");
         var switchboard = require("switchboard");
+        var environments = require("env");
         switchboard.setup();
         var globalInitFnName = "plyfeAsyncInit";
         var loadedViaRealAMDLoader = !window.Plyfe || window.Plyfe.amd !== false;
@@ -786,6 +812,10 @@
             if (/\/plyfe-widgets-bootstrap.*?\.js(\?|#|$)/.test(script.src)) {
                 settings.authToken = utils.dataAttr(script, "auth-token", null);
                 settings.scheme = utils.dataAttr(script, "scheme", settings.scheme);
+                settings.env = utils.dataAttr(script, "env", settings.env);
+                var env = environments[settings.env] || environments.production;
+                settings.domain = env.domain;
+                settings.port = env.port;
                 settings.domain = utils.dataAttr(script, "domain", settings.domain);
                 settings.port = +utils.dataAttr(script, "port") || settings.port;
                 settings.theme = utils.dataAttr(script, "theme");
