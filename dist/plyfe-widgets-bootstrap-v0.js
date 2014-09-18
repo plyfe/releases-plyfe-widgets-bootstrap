@@ -1,5 +1,5 @@
 /*!
- * Plyfe Widgets Library v0.3.8
+ * Plyfe Widgets Library v0.3.9
  * http://plyfe.com/
  *
  * Copyright 2014, Plyfe Inc.
@@ -495,9 +495,34 @@
             theme: null
         };
     });
-    define("widget", [ "require", "utils", "settings" ], function(require) {
+    define("env", [ "require" ], function(require) {
+        return {
+            production: {
+                domain: "plyfe.me",
+                port: 443
+            },
+            staging: {
+                domain: "staging.plyfe.me",
+                port: 443
+            },
+            demo: {
+                domain: "demo.plyfe.me",
+                port: 443
+            },
+            test: {
+                domain: "test.plyfe.me",
+                port: 443
+            },
+            development: {
+                domain: "development.plyfe.me",
+                port: 3001
+            }
+        };
+    });
+    define("widget", [ "require", "utils", "settings", "env" ], function(require) {
         var utils = require("utils");
         var settings = require("settings");
+        var environments = require("env");
         var widgets = [];
         var widgetCount = 0;
         var WIDGET_READY_TIMEOUT = 5e3;
@@ -523,8 +548,11 @@
                 throwAttrRequired("id");
             }
             var scheme = utils.dataAttr(el, "scheme", settings.scheme);
-            var domain = utils.dataAttr(el, "domain", settings.domain);
-            var port = utils.dataAttr(el, "port", settings.port);
+            var env = utils.dataAttr(el, "env", settings.env);
+            var domain = environments[env].domain;
+            var port = environments[env].port;
+            domain = utils.dataAttr(el, "domain", domain);
+            port = utils.dataAttr(el, "port", port);
             var height = +utils.dataAttr(el, "height");
             if (!height) {
                 throwAttrRequired("height");
@@ -770,30 +798,6 @@
         return {
             setup: setup,
             postMessage: pm
-        };
-    });
-    define("env", [ "require" ], function(require) {
-        return {
-            production: {
-                domain: "plyfe.me",
-                port: 443
-            },
-            staging: {
-                domain: "staging.plyfe.me",
-                port: 443
-            },
-            demo: {
-                domain: "demo.plyfe.me",
-                port: 443
-            },
-            test: {
-                domain: "test.plyfe.me",
-                port: 443
-            },
-            dev: {
-                domain: "development.plyfe.me",
-                port: 3001
-            }
         };
     });
     define("main", [ "require", "utils", "settings", "widget", "auth", "switchboard", "env" ], function(require) {
