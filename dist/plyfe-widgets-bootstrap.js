@@ -1,5 +1,5 @@
 /*!
- * Plyfe Widgets Library v0.3.10
+ * Plyfe Widgets Library v0.3.11
  * http://plyfe.com/
  *
  * Copyright 2014, Plyfe Inc.
@@ -548,9 +548,13 @@
                 throwAttrRequired("id");
             }
             var scheme = utils.dataAttr(el, "scheme", settings.scheme);
-            var env = utils.dataAttr(el, "env", settings.env);
-            var domain = environments[env].domain;
-            var port = environments[env].port;
+            var domain = settings.domain;
+            var port = settings.port;
+            var env = utils.dataAttr(el, "env");
+            if (env) {
+                domain = environments[env].domain;
+                port = environments[env].port;
+            }
             domain = utils.dataAttr(el, "domain", domain);
             port = utils.dataAttr(el, "port", port);
             var height = +utils.dataAttr(el, "height");
