@@ -1,5 +1,5 @@
 /*!
- * Plyfe Widgets Library v0.3.11
+ * Plyfe Widgets Library v0.3.12
  * http://plyfe.com/
  *
  * Copyright 2014, Plyfe Inc.
@@ -7,7 +7,7 @@
  * Available via the MIT license.
  * http://github.com/plyfe/plyfe-widgets-bootstrap/LICENSE
  *
- * Date: 2014-09-19
+ * Date: 2014-10-16
  */
 (function(root, factory) {
     if (typeof define === "function" && define.amd) {
@@ -535,17 +535,39 @@
         }
         function Widget(el) {
             this.el = el;
-            this.venue = utils.dataAttr(el, "venue");
-            this.type = utils.dataAttr(el, "type");
-            this.id = utils.dataAttr(el, "id");
-            if (!this.venue) {
-                throwAttrRequired("venue");
-            }
-            if (!this.type) {
-                throwAttrRequired("type");
-            }
-            if (!this.id) {
-                throwAttrRequired("id");
+            this.slot = utils.dataAttr(el, "slot");
+            var path = [];
+            var params = {};
+            var height = null;
+            if (this.slot) {
+                path = [ "s", this.slot ];
+            } else {
+                this.venue = utils.dataAttr(el, "venue");
+                this.type = utils.dataAttr(el, "type");
+                this.id = utils.dataAttr(el, "id");
+                if (!this.venue) {
+                    throwAttrRequired("venue");
+                }
+                if (!this.type) {
+                    throwAttrRequired("type");
+                }
+                if (!this.id) {
+                    throwAttrRequired("id");
+                }
+                height = +utils.dataAttr(el, "height");
+                if (!height) {
+                    throwAttrRequired("height");
+                }
+                path = [ "w", this.venue, this.type, this.id ];
+                params = {
+                    theme: utils.dataAttr(el, "theme", settings.theme),
+                    theme_data: utils.dataAttr(el, "theme-overrides"),
+                    treatment: utils.dataAttr(el, "treatment"),
+                    height: height
+                };
+                if (utils.dataAttr(el, "transparent-bg")) {
+                    params.transparent = "true";
+                }
             }
             var scheme = utils.dataAttr(el, "scheme", settings.scheme);
             var domain = settings.domain;
@@ -557,20 +579,6 @@
             }
             domain = utils.dataAttr(el, "domain", domain);
             port = utils.dataAttr(el, "port", port);
-            var height = +utils.dataAttr(el, "height");
-            if (!height) {
-                throwAttrRequired("height");
-            }
-            var path = [ "w", this.venue, this.type, this.id ];
-            var params = {
-                theme: utils.dataAttr(el, "theme", settings.theme),
-                theme_data: utils.dataAttr(el, "theme-overrides"),
-                treatment: utils.dataAttr(el, "treatment"),
-                height: height
-            };
-            if (utils.dataAttr(el, "transparent-bg")) {
-                params.transparent = "true";
-            }
             var url = utils.buildUrl(scheme, domain, port, path.join("/"), params);
             function widgetIsReady() {
                 clearTimeout(readyTimeout);
