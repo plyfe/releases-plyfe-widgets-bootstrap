@@ -1,5 +1,5 @@
 /*!
- * Plyfe Widgets Library v0.4.1
+ * Plyfe Widgets Library v0.5.0
  * http://plyfe.com/
  *
  * Copyright 2014, Plyfe Inc.
@@ -7,7 +7,7 @@
  * Available via the MIT license.
  * http://github.com/plyfe/plyfe-widgets-bootstrap/LICENSE
  *
- * Date: 2014-10-25
+ * Date: 2014-11-20
  */
 (function(root, factory) {
     if (typeof define === "function" && define.amd) {
@@ -424,14 +424,18 @@
             if (cacheProperty) {
                 return cacheProperty;
             }
-            objForEach(vendorPrefixMap, function(jsPropertyPrefix, cssPropertyPrefix) {
-                var jsProperty = dashedToCamel(jsPropertyPrefix + property);
-                if (typeof tempDiv.style[jsProperty] === "string") {
-                    var cssProperty = cssPropertyPrefix + property;
-                    cssRules[property] = cssProperty;
-                    return cssProperty;
+            for (var jsPropertyPrefix in vendorPrefixMap) {
+                if (vendorPrefixMap.hasOwnProperty(jsPropertyPrefix)) {
+                    var cssPropertyPrefix = vendorPrefixMap[jsPropertyPrefix];
+                    var jsProperty = dashedToCamel(jsPropertyPrefix + property);
+                    if (typeof tempDiv.style[jsProperty] === "string") {
+                        var cssProperty = cssPropertyPrefix + property;
+                        cssRules[property] = cssProperty;
+                        return cssProperty;
+                    }
                 }
-            });
+            }
+            return property;
         }
         function cssRule(property, value) {
             return findSupportedCSSPropertyName(property) + ": " + value + ";";
@@ -525,8 +529,7 @@
         var environments = require("env");
         var widgets = [];
         var widgetCount = 0;
-        var WIDGET_READY_TIMEOUT = 5e3;
-        var WIDGET_CSS = "" + ".plyfe-widget {" + "opacity: 0;" + "overflow-x: hidden;" + utils.cssRule("transition", "opacity 300ms") + "}" + "\n" + ".plyfe-widget.ready {" + "opacity: 1;" + "}" + "\n" + ".plyfe-widget iframe {" + "display: block;" + "width: 100%;" + "height: 100%;" + "border-width: 0;" + "overflow: hidden;" + "}";
+        var WIDGET_CSS = "" + ".plyfe-widget {" + "width: 0;" + "height: 0;" + "opacity: 0;" + "overflow-x: hidden;" + utils.cssRule("transition", "opacity 300ms") + "}" + "\n" + ".plyfe-widget.ready {" + "opacity: 1;" + "}" + "\n" + ".plyfe-widget iframe {" + "display: block;" + "width: 100%;" + "height: 100%;" + "border-width: 0;" + "overflow: hidden;" + "}";
         utils.customStyleSheet(WIDGET_CSS, {
             id: "plyfe-widget-css"
         });
@@ -538,7 +541,6 @@
             this.slot = utils.dataAttr(el, "slot");
             var path = [];
             var params = {};
-            var height = null;
             if (this.slot) {
                 path = [ "s", this.slot ];
             } else {
@@ -550,16 +552,9 @@
                 if (!this.id) {
                     throwAttrRequired("id");
                 }
-                height = +utils.dataAttr(el, "height");
-                if (!height) {
-                    throwAttrRequired("height");
-                }
                 path = [ "w", this.type, this.id ];
                 params = {
-                    theme: utils.dataAttr(el, "theme", settings.theme),
-                    theme_data: utils.dataAttr(el, "theme-overrides"),
-                    treatment: utils.dataAttr(el, "treatment"),
-                    height: height
+                    theme: utils.dataAttr(el, "theme", settings.theme)
                 };
                 if (utils.dataAttr(el, "transparent-bg")) {
                     params.transparent = "true";
@@ -576,26 +571,24 @@
             domain = utils.dataAttr(el, "domain", domain);
             port = utils.dataAttr(el, "port", port);
             var url = utils.buildUrl(scheme, domain, port, path.join("/"), params);
-            function widgetIsReady() {
-                clearTimeout(readyTimeout);
-                utils.addClass(el, "ready");
-            }
             var iframeName = "plyfe-" + ++widgetCount;
             var iframe = document.createElement("iframe");
-            iframe.onload = widgetIsReady;
             iframe.name = iframeName;
             iframe.src = url;
             iframe.scrolling = "no";
             iframe.frameBorder = "0";
             iframe.allowTransparency = "true";
-            utils.setStyles(iframe, {
-                height: height
-            });
             this.el.innerHTML = "";
             this.el.appendChild(iframe);
             this.iframe = iframe;
-            var readyTimeout = setTimeout(widgetIsReady, WIDGET_READY_TIMEOUT);
         }
+        Widget.prototype.ready = function widgetReady(width, height) {
+            utils.setStyles(this.el, {
+                width: width,
+                height: height
+            });
+            utils.addClass(this.el, "ready");
+        };
         function createWidget(el) {
             if (!el && el.nodeType === 3) {
                 throw new utils.PlyfeError("createWidget() must be called with a DOM element");
@@ -779,9 +772,23 @@
                 routeMessage(name, data, e.source);
             }
         }
+        function findWidget(win) {
+            var widgets = widget.list;
+            for (var i = widgets.length - 1; i >= 0; i--) {
+                var wgt = widgets[i];
+                if (wgt.iframe.contentWindow === win) {
+                    return wgt;
+                }
+            }
+        }
         function routeMessage(name, data, sourceWindow) {
             var parts = name.split(":");
             switch (parts[0]) {
+              case "load":
+                var wgt = findWidget(sourceWindow);
+                wgt.ready(data.width, data.height);
+                break;
+
               case "broadcast":
                 broadcast(parts.slice(1).join(":"), data, sourceWindow);
                 break;
