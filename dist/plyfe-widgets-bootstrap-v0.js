@@ -1,5 +1,5 @@
 /*!
- * Plyfe Widgets Library v0.5.0
+ * Plyfe Widgets Library v0.5.1
  * http://plyfe.com/
  *
  * Copyright 2014, Plyfe Inc.
@@ -7,7 +7,7 @@
  * Available via the MIT license.
  * http://github.com/plyfe/plyfe-widgets-bootstrap/LICENSE
  *
- * Date: 2014-11-20
+ * Date: 2014-11-25
  */
 (function(root, factory) {
     if (typeof define === "function" && define.amd) {
@@ -523,16 +523,102 @@
             }
         };
     });
-    define("widget", [ "require", "utils", "settings", "env" ], function(require) {
+    define("switchboard", [ "require", "utils" ], function(require) {
+        var utils = require("utils");
+        var MESSAGE_PREFIX = "plyfe:";
+        var ORIGIN = "*";
+        var events = {};
+        function pm(win, name, data) {
+            if (!name) {
+                throw new TypeError("Argument name required");
+            }
+            win.postMessage(MESSAGE_PREFIX + name + "\n" + JSON.stringify(data), ORIGIN);
+        }
+        function gotMessage(e) {
+            if (!window.JSON) {
+                return;
+            }
+            var payload = e.data;
+            if (typeof payload !== "string") {
+                return;
+            }
+            var messageForUs = payload.substr(0, MESSAGE_PREFIX.length) === MESSAGE_PREFIX;
+            if (messageForUs) {
+                var newlinePos = payload.indexOf("\n", MESSAGE_PREFIX.length);
+                var name = payload.substring(MESSAGE_PREFIX.length, newlinePos);
+                var data = JSON.parse(payload.substr(newlinePos + 1));
+                routeMessage(name, data, e.source);
+            }
+        }
+        function findEventHandlers() {
+            var handlers = [];
+            for (var i = 0; i < arguments.length; i++) {
+                var arg = arguments[i];
+                handlers = handlers.concat(events[arg] || []);
+            }
+            return handlers;
+        }
+        function routeMessage(name, data, sourceWindow) {
+            var parts = name.split(":");
+            var handlers = findEventHandlers(name, events[parts[0] + ":*"], "*");
+            for (var i = 0; i < handlers.length; i++) {
+                handlers[i](name, data, sourceWindow);
+            }
+            if (handlers.length === 0) {
+                console.warn("Switchboard recieved a unhandled '" + name + "' message", data);
+            }
+        }
+        function addListener(name, callback) {
+            if (typeof callback !== "function") {
+                throw new TypeError("second argument must be a function");
+            }
+            var listeners = events[name] = events[name] || [];
+            listeners.push(callback);
+        }
+        function removeListener(name, callback) {
+            if (callback) {
+                var handlers = events[name] || [];
+                for (var i = handlers.length - 1; i >= 0; i--) {
+                    if (handlers[i] === callback) {
+                        handlers.splice(i, 1);
+                    }
+                }
+            } else {
+                delete events[name];
+            }
+        }
+        function setup() {
+            utils.addEvent(window, "message", gotMessage);
+        }
+        return {
+            setup: setup,
+            send: pm,
+            on: addListener,
+            off: removeListener,
+            events: events
+        };
+    });
+    define("widget", [ "require", "utils", "settings", "env", "switchboard" ], function(require) {
         var utils = require("utils");
         var settings = require("settings");
         var environments = require("env");
+        var switchboard = require("switchboard");
         var widgets = [];
         var widgetCount = 0;
         var WIDGET_CSS = "" + ".plyfe-widget {" + "width: 0;" + "height: 0;" + "opacity: 0;" + "overflow-x: hidden;" + utils.cssRule("transition", "opacity 300ms") + "}" + "\n" + ".plyfe-widget.ready {" + "opacity: 1;" + "}" + "\n" + ".plyfe-widget iframe {" + "display: block;" + "width: 100%;" + "height: 100%;" + "border-width: 0;" + "overflow: hidden;" + "}";
         utils.customStyleSheet(WIDGET_CSS, {
             id: "plyfe-widget-css"
         });
+        function broadcast(name, data, sourceWindow) {
+            var broadcastPrefix = "broadcast:";
+            for (var i = 0; i < widgets.length; i++) {
+                var wgt = widgets[i];
+                if (wgt.iframe.contentWindow !== sourceWindow) {
+                    var eventName = name.substr(broadcastPrefix.length);
+                    switchboard.send(wgt.iframe.contentWindow, eventName, data);
+                }
+            }
+        }
         function throwAttrRequired(attr) {
             throw new utils.PlyfeError("data-" + attr + " attribute required");
         }
@@ -611,16 +697,19 @@
                 }
             }
         }
-        function forEach(callback) {
+        switchboard.on("broadcast:*", broadcast);
+        switchboard.on("load", function loadEvent(name, data, sourceWindow) {
             for (var i = widgets.length - 1; i >= 0; i--) {
-                callback(widgets[i]);
+                var wgt = widgets[i];
+                if (wgt.iframe.contentWindow === sourceWindow) {
+                    wgt.ready(data.width, data.height);
+                }
             }
-        }
+        });
         return {
             create: createWidget,
             distroy: destroyWidget,
-            list: widgets,
-            forEach: forEach
+            list: widgets
         };
     });
     define("api", [ "require", "utils", "settings" ], function(require) {
@@ -746,73 +835,6 @@
         }
         return {
             logIn: logIn
-        };
-    });
-    define("switchboard", [ "require", "utils", "widget" ], function(require) {
-        var utils = require("utils");
-        var widget = require("widget");
-        var MESSAGE_PREFIX = "plyfe:";
-        var ORIGIN = "*";
-        function pm(win, name, data) {
-            if (!name) {
-                throw new TypeError("Argument name required");
-            }
-            win.postMessage(MESSAGE_PREFIX + name + "\n" + JSON.stringify(data), ORIGIN);
-        }
-        function gotMessage(e) {
-            if (!window.JSON) {
-                return;
-            }
-            var payload = e.data;
-            var messageForUs = payload.substr(0, MESSAGE_PREFIX.length) === MESSAGE_PREFIX;
-            if (messageForUs) {
-                var newlinePos = payload.indexOf("\n", MESSAGE_PREFIX.length);
-                var name = payload.substring(MESSAGE_PREFIX.length, newlinePos);
-                var data = JSON.parse(payload.substr(newlinePos + 1));
-                routeMessage(name, data, e.source);
-            }
-        }
-        function findWidget(win) {
-            var widgets = widget.list;
-            for (var i = widgets.length - 1; i >= 0; i--) {
-                var wgt = widgets[i];
-                if (wgt.iframe.contentWindow === win) {
-                    return wgt;
-                }
-            }
-        }
-        function routeMessage(name, data, sourceWindow) {
-            var parts = name.split(":");
-            switch (parts[0]) {
-              case "load":
-                var wgt = findWidget(sourceWindow);
-                wgt.ready(data.width, data.height);
-                break;
-
-              case "broadcast":
-                broadcast(parts.slice(1).join(":"), data, sourceWindow);
-                break;
-
-              case "sizechanged":
-                break;
-
-              default:
-                console.warn("Switchboard recieved a unhandled '" + name + "' message", data);
-            }
-        }
-        function broadcast(name, data, sourceWindow) {
-            widget.forEach(function(wgt) {
-                if (wgt.iframe.contentWindow !== sourceWindow) {
-                    pm(wgt.iframe.contentWindow, name, data);
-                }
-            });
-        }
-        function setup() {
-            utils.addEvent(window, "message", gotMessage);
-        }
-        return {
-            setup: setup,
-            postMessage: pm
         };
     });
     define("main", [ "require", "utils", "settings", "widget", "auth", "switchboard", "env" ], function(require) {
