@@ -1,5 +1,5 @@
 /*!
- * Plyfe Widgets Library v0.5.1
+ * Plyfe Widgets Library v1.0.0
  * http://plyfe.com/
  *
  * Copyright 2014, Plyfe Inc.

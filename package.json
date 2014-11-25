@@ -1,6 +1,6 @@
 {
   "name": "plyfe-widgets-bootstrap",
-  "version": "0.5.1",
+  "version": "1.0.0",
   "description": "Plyfe's embedable widgets",
   "scripts": {
     "test": "grunt test",
