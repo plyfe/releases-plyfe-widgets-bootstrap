@@ -7,20 +7,13 @@
  * Available via the MIT license.
  * http://github.com/plyfe/plyfe-widgets-bootstrap/LICENSE
  *
- * Date: 2014-11-25
+ * Date: 2015-04-30
  */
 (function(root, factory) {
-    if (typeof define === "function" && define.amd) {
-        define([], factory);
-    } else {
-        if (root.Plyfe) {
-            return;
-        }
-        root.Plyfe = {
-            amd: false
-        };
-        root.Plyfe = factory();
+    if (root.Plyfe) {
+        return;
     }
+    root.Plyfe = factory();
 })(this, function() {
     var requirejs, require, define;
     (function(undef) {
@@ -275,6 +268,7 @@
     })();
     define("../node_modules/almond/almond", function() {});
     define("utils", [ "require" ], function(require) {
+        "use strict";
         var head = document.getElementsByTagName("head")[0];
         var _undefined;
         function dataAttr(el, name, defval) {
@@ -489,6 +483,7 @@
         };
     });
     define("settings", [ "require" ], function(require) {
+        "use strict";
         return {
             scheme: "https",
             env: "production",
@@ -500,6 +495,7 @@
         };
     });
     define("env", [ "require" ], function(require) {
+        "use strict";
         return {
             production: {
                 domain: "plyfe.me",
@@ -524,6 +520,7 @@
         };
     });
     define("switchboard", [ "require", "utils" ], function(require) {
+        "use strict";
         var utils = require("utils");
         var MESSAGE_PREFIX = "plyfe:";
         var ORIGIN = "*";
@@ -599,6 +596,7 @@
         };
     });
     define("widget", [ "require", "utils", "settings", "env", "switchboard" ], function(require) {
+        "use strict";
         var utils = require("utils");
         var settings = require("settings");
         var environments = require("env");
@@ -713,6 +711,7 @@
         };
     });
     define("api", [ "require", "utils", "settings" ], function(require) {
+        "use strict";
         var utils = require("utils");
         var settings = require("settings");
         var _undefined;
@@ -809,6 +808,7 @@
         };
     });
     define("auth", [ "require", "utils", "settings", "api" ], function(require) {
+        "use strict";
         var utils = require("utils");
         var settings = require("settings");
         var api = require("api");
@@ -838,6 +838,7 @@
         };
     });
     define("main", [ "require", "utils", "settings", "widget", "auth", "switchboard", "env" ], function(require) {
+        "use strict";
         var utils = require("utils");
         var settings = require("settings");
         var widget = require("widget");
@@ -846,7 +847,6 @@
         var environments = require("env");
         switchboard.setup();
         var globalInitFnName = "plyfeAsyncInit";
-        var loadedViaRealAMDLoader = !window.Plyfe || window.Plyfe.amd !== false;
         var scripts = document.getElementsByTagName("script");
         for (var i = scripts.length - 1; i >= 0; i--) {
             var script = scripts[i];
@@ -864,19 +864,17 @@
                 break;
             }
         }
-        if (!loadedViaRealAMDLoader) {
-            utils.domReady(function() {
-                if (window[globalInitFnName] && typeof window[globalInitFnName] === "function") {
-                    setTimeout(window[globalInitFnName], 0);
-                } else if (settings.authToken) {
-                    auth.logIn(function() {
-                        createWidgets();
-                    });
-                } else {
+        utils.domReady(function() {
+            if (window[globalInitFnName] && typeof window[globalInitFnName] === "function") {
+                setTimeout(window[globalInitFnName], 0);
+            } else if (settings.authToken) {
+                auth.logIn(function() {
                     createWidgets();
-                }
-            });
-        }
+                });
+            } else {
+                createWidgets();
+            }
+        });
         function createWidgets() {
             var divs = document.querySelectorAll(settings.selector);
             for (var i = 0; i < divs.length; i++) {
