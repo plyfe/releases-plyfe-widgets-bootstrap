@@ -1,5 +1,5 @@
 /*!
- * Plyfe Widgets Library v1.0.0
+ * Plyfe Widgets Library v1.1.0
  * http://plyfe.com/
  *
  * Copyright 2014, Plyfe Inc.
@@ -7,7 +7,7 @@
  * Available via the MIT license.
  * http://github.com/plyfe/plyfe-widgets-bootstrap/LICENSE
  *
- * Date: 2015-04-30
+ * Date: 2015-05-19
  */
 (function(root, factory) {
     if (root.Plyfe) {
@@ -373,7 +373,9 @@
         }
         function setStyles(el, styles) {
             objForEach(styles, function(name, value) {
-                el.style[name] = typeof value === "number" ? value + "px" : value;
+                if (value !== null && value !== _undefined) {
+                    el.style[name] = typeof value === "number" ? value + "px" : value;
+                }
             });
         }
         function dashedToCamel(input) {
@@ -603,10 +605,18 @@
         var switchboard = require("switchboard");
         var widgets = [];
         var widgetCount = 0;
-        var WIDGET_CSS = "" + ".plyfe-widget {" + "width: 0;" + "height: 0;" + "opacity: 0;" + "overflow-x: hidden;" + utils.cssRule("transition", "opacity 300ms") + "}" + "\n" + ".plyfe-widget.ready {" + "opacity: 1;" + "}" + "\n" + ".plyfe-widget iframe {" + "display: block;" + "width: 100%;" + "height: 100%;" + "border-width: 0;" + "overflow: hidden;" + "}";
+        var WIDGET_CSS = "" + ".plyfe-widget {" + "height: 0;" + "opacity: 0;" + "overflow-x: hidden;" + utils.cssRule("transition", "opacity 300ms") + "}" + "\n" + ".plyfe-widget.ready {" + "opacity: 1;" + "}" + "\n" + ".plyfe-widget iframe {" + "display: block;" + "width: 100%;" + "height: 100%;" + "border-width: 0;" + "overflow: hidden;" + "}";
         utils.customStyleSheet(WIDGET_CSS, {
             id: "plyfe-widget-css"
         });
+        function findWidgetFromSourceWindow(sourceWindow) {
+            for (var i = widgets.length - 1; i >= 0; i--) {
+                var wgt = widgets[i];
+                if (wgt.iframe.contentWindow === sourceWindow) {
+                    return wgt;
+                }
+            }
+        }
         function broadcast(name, data, sourceWindow) {
             var broadcastPrefix = "broadcast:";
             for (var i = 0; i < widgets.length; i++) {
@@ -666,10 +676,12 @@
             this.el.appendChild(iframe);
             this.iframe = iframe;
         }
-        Widget.prototype.ready = function widgetReady(width, height) {
+        Widget.prototype.ready = function widgetReady(data) {
             utils.setStyles(this.el, {
-                width: width,
-                height: height
+                minWidth: data.minWidth,
+                maxWidth: data.maxWidth,
+                height: data.height,
+                minHeight: data.minHeight
             });
             utils.addClass(this.el, "ready");
         };
@@ -697,12 +709,12 @@
         }
         switchboard.on("broadcast:*", broadcast);
         switchboard.on("load", function loadEvent(name, data, sourceWindow) {
-            for (var i = widgets.length - 1; i >= 0; i--) {
-                var wgt = widgets[i];
-                if (wgt.iframe.contentWindow === sourceWindow) {
-                    wgt.ready(data.width, data.height);
-                }
-            }
+            findWidgetFromSourceWindow(sourceWindow).ready(data);
+        });
+        switchboard.on("height", function heightChanged(name, height, sourceWindow) {
+            utils.setStyles(findWidgetFromSourceWindow(sourceWindow).el, {
+                height: height
+            });
         });
         return {
             create: createWidget,
