@@ -1,5 +1,5 @@
 /*!
- * Plyfe Widgets Library v1.1.0
+ * Plyfe Widgets Library v1.2.0
  * http://plyfe.com/
  *
  * Copyright 2014, Plyfe Inc.
@@ -7,7 +7,7 @@
  * Available via the MIT license.
  * http://github.com/plyfe/plyfe-widgets-bootstrap/LICENSE
  *
- * Date: 2015-05-19
+ * Date: 2015-06-30
  */
 (function(root, factory) {
     if (root.Plyfe) {
@@ -463,6 +463,16 @@
             this.message = message || "";
         }
         PlyfeError.prototype = Error.prototype;
+        function objectMerge(obj, defaultObj) {
+            var mergedObj = {};
+            for (var k in defaultObj || {}) {
+                mergedObj[k] = defaultObj[k];
+            }
+            for (var j in obj || {}) {
+                mergedObj[j] = obj[j];
+            }
+            return mergedObj;
+        }
         return {
             head: head,
             dataAttr: dataAttr,
@@ -481,7 +491,8 @@
             uniqueString: uniqueString,
             trim: trim,
             addClass: addClass,
-            PlyfeError: PlyfeError
+            PlyfeError: PlyfeError,
+            objectMerge: objectMerge
         };
     });
     define("settings", [ "require" ], function(require) {
@@ -896,12 +907,33 @@
         function createWidget(el) {
             return widget.create(el);
         }
-        return {
+        function cardEvent(eventName, data) {
+            var user = utils.objectMerge(data.user, {
+                id: 0
+            });
+            var card = utils.objectMerge(data.card, {
+                id: 0,
+                type: "no_type"
+            });
+            plyfeObj["onCard" + eventName].call(plyfeObj, card, user);
+        }
+        switchboard.on("card:start", function(name, data) {
+            cardEvent("Start", data);
+        });
+        switchboard.on("card:complete", function(name, data) {
+            cardEvent("Complete", data);
+        });
+        var onCardStart = window.Plyfe && window.Plyfe.onCardStart || function() {};
+        var onCardComplete = window.Plyfe && window.Plyfe.onCardComplete || function() {};
+        var plyfeObj = {
             settings: settings,
             createWidgets: createWidgets,
             createWidget: createWidget,
-            logIn: auth.logIn
+            logIn: auth.logIn,
+            onCardStart: onCardStart,
+            onCardComplete: onCardComplete
         };
+        return plyfeObj;
     });
     return require("main");
 });
