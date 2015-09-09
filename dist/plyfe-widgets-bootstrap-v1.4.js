@@ -1,5 +1,5 @@
 /*!
- * Plyfe Widgets Library v1.3.0
+ * Plyfe Widgets Library v1.4.0
  * http://plyfe.com/
  *
  * Copyright 2015, Plyfe Inc.
@@ -7,7 +7,7 @@
  * Available via the MIT license.
  * http://github.com/plyfe/plyfe-widgets-bootstrap/LICENSE
  *
- * Date: 2015-08-17
+ * Date: 2015-09-09
  */
 (function(root, factory) {
     if (root.Plyfe) {
@@ -773,20 +773,40 @@
             });
             plyfeObj["onCard" + eventName].call(plyfeObj, card, user);
         }
+        function choiceEvent(data, eventName) {
+            var user = utils.objectMerge(data.user, {
+                id: 0
+            });
+            var card = utils.objectMerge(data.card, {
+                id: 0,
+                type: "no_type"
+            });
+            var choice = utils.objectMerge(data.choice, {
+                id: 0,
+                name: "no_name",
+                correct: null
+            });
+            plyfeObj["onChoice" + eventName].call(plyfeObj, card, user, choice);
+        }
         switchboard.on("card:start", function(data) {
             cardEvent(data, "Start");
         });
         switchboard.on("card:complete", function(data) {
             cardEvent(data, "Complete");
         });
+        switchboard.on("choice:selection", function(data) {
+            choiceEvent(data, "Selection");
+        });
         var onCardStart = window.Plyfe && window.Plyfe.onCardStart || function() {};
         var onCardComplete = window.Plyfe && window.Plyfe.onCardComplete || function() {};
+        var onChoiceSelection = window.Plyfe && window.Plyfe.onChoiceSelection || function() {};
         var plyfeObj = {
             settings: settings,
             createWidgets: createWidgets,
             createWidget: createWidget,
             onCardStart: onCardStart,
-            onCardComplete: onCardComplete
+            onCardComplete: onCardComplete,
+            onChoiceSelection: onChoiceSelection
         };
         return plyfeObj;
     });
