@@ -1,5 +1,5 @@
 /*!
- * Plyfe Widgets Library v1.4.0
+ * Plyfe Widgets Library v1.5.0
  * http://plyfe.com/
  *
  * Copyright 2015, Plyfe Inc.
@@ -7,7 +7,7 @@
  * Available via the MIT license.
  * http://github.com/plyfe/plyfe-widgets-bootstrap/LICENSE
  *
- * Date: 2015-09-09
+ * Date: 2015-09-11
  */
 (function(root, factory) {
     if (root.Plyfe) {
@@ -664,6 +664,10 @@
             var customId = utils.dataAttr(el, "custom-id");
             if (customId) {
                 params.custom_id = customId;
+            }
+            var clickTrackerId = utils.dataAttr(el, "click-tracker-id");
+            if (clickTrackerId) {
+                params.click_tracker_id = clickTrackerId;
             }
             var url = utils.buildUrl(scheme, domain, port, path.join("/"), params);
             var iframeName = "plyfe-" + ++widgetCount;
